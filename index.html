@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-19E2PHBQCS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-19E2PHBQCS');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanillax</title>
+    <style>
+        :root {
+            --primary-bg: #0a0a0a;
+            --card-bg: #161616;
+            --accent-color: #ff00ff; 
+            --text-color: #ffffff;
+            --warning-color: #ff4d4d;
+            --splash-color: #ffff00;
+            --neon-glow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px var(--accent-color), 0 0 82px var(--accent-color);
+        }
+
+        @keyframes siteReveal {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes cardOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0; filter: blur(4px); }
+        }
+
+        @keyframes starPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+
+        .animating-card {
+            animation: cardOut 0.2s ease-in forwards !important;
+            pointer-events: none;
+        }
+
+        .star-anim {
+            animation: starPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .top-nav { 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; z-index: 9999; 
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            padding: 10px 20px;
+            background-color: rgba(10, 10, 10, 0.75); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-sizing: border-box;
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 15px; }
+        .nav-center { display: flex; justify-content: center; }
+        .nav-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+
+        .panic-btn {
+            background: rgba(26, 26, 26, 0.8);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+            padding: 0 60px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            transition: 0.2s;
+            height: 38px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .panic-btn:hover { background: var(--warning-color); color: white; box-shadow: 0 0 15px var(--warning-color); transform: scale(1.02); }
+
+        #search-bar {
+            background: rgba(26, 26, 26, 0.8); border: 1px solid #333; color: white;
+            padding: 0 15px; border-radius: 20px; outline: none; width: 180px; transition: 0.3s;
+            height: 38px;
+        }
+        #search-bar:focus { border-color: var(--accent-color); width: 220px; }
+
+        .icon-btn { background: none; border: none; font-size: 22px; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        
+        #panic-toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4d4d;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 100000;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(255, 77, 77, 0.4);
+            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+        }
+        #panic-toast.active { bottom: 40px; }
+
+        /* Game Theater (Iframe) */
+        #game-theater {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 20000;
+        }
+        #game-theater.active { display: block; }
+        
+        #game-frame {
+            width: 100%; height: 100%;
+            border: none;
+        }
+
+        .theater-controls {
+            position: absolute;
+            top: 20px; left: 20px;
+            z-index: 20001;
+        }
+
+        .back-arrow-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-arrow-btn:hover { background: var(--accent-color); border-color: white; transform: scale(1.1); }
+
+        /* Rest of UI */
+        .dropdown-pane {
+            position: fixed; 
+            top: 55px; right: 20px; background: #1a1a1a;
+            border: 1px solid #333; border-radius: 10px;
+            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            padding: 15px; z-index: 10000;
+        }
+        .dropdown-pane.show { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .color-dot { width: 25px; height: 25px; border-radius: 50%; border: 2px solid #333; cursor: pointer; transition: 0.2s; }
+        .color-dot:hover { transform: scale(1.2); border-color: white; }
+
+        .main-content { animation: siteReveal 0.8s ease-out forwards; width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 100px; }
+        
+        header { margin-bottom: 50px; text-align: center; position: relative; }
+        h1 { font-size: 5rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 10px; margin: 0; text-shadow: var(--neon-glow); user-select: none; }
+        
+        .splash { position: absolute; top: -10px; right: -60px; color: var(--splash-color); font-weight: bold; font-size: 1.2rem; transform: rotate(-15deg); text-shadow: 2px 2px #000; animation: bounce 0.6s infinite alternate; white-space: nowrap; }
+        @keyframes bounce { from { transform: rotate(-15deg) scale(1); } to { transform: rotate(-15deg) scale(1.15); } }
+
+        .section-title { width: 100%; max-width: 1200px; margin: 20px 0; color: var(--accent-color); font-size: 1.2rem; text-transform: uppercase; display: none; }
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; width: 100%; max-width: 1200px; padding-bottom: 40px; }
+        .game-card { background: rgba(22, 22, 22, 0.9); border-radius: 15px; border: 1px solid #222; transition: transform 0.2s; position: relative; overflow: hidden; height: 140px; cursor: pointer; }
+        .game-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
+        
+        .game-title { color: var(--text-color); font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; padding: 10px; box-sizing: border-box; }
+
+        .tag-container { position: absolute; bottom: 8px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+        .popular-tag { color: var(--accent-color); font-size: 0.7rem; text-shadow: 0 0 5px var(--accent-color); text-transform: uppercase; }
+        .restriction-tag { color: var(--warning-color); font-size: 0.65rem; text-transform: uppercase; margin-top: 2px; }
+        .instruction-tag { color: #00ff00; font-size: 0.6rem; text-transform: uppercase; margin-top: 2px; }
+        .risk-tag { color: #ff0000; font-size: 0.6rem; text-transform: uppercase; margin-top: 2px; font-weight: bold; }
+        
+        .fav-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #444; font-size: 20px; cursor: pointer; z-index: 10; transition: color 0.2s; }
+        .fav-btn.active { color: #ffeb3b; }
+
+        footer { margin-top: auto; padding: 40px; font-size: 0.85rem; color: #555; text-align: center; }
+
+        #ban-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: var(--warning-color); z-index: 10001; flex-direction: column; justify-content: center; align-items: center; font-family: 'Courier New', monospace; }
+        body.is-banned #ban-screen { display: flex; }
+        body.is-banned .main-content, body.is-banned .top-nav { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ban-screen">
+        <h1 style="color: red; font-size: 4rem; text-shadow: none;">ACCESS DENIED</h1>
+        <p>This browser has been restricted from accessing Vanillax.</p>
+        <p style="font-size: 0.8rem; margin-top: 20px; opacity: 0.3;">System ID: 0x8004100E</p>
+    </div>
+
+    <div id="game-theater">
+        <div class="theater-controls">
+            <button class="back-arrow-btn" onclick="closeGame()">←</button>
+        </div>
+        <iframe id="game-frame" src=""></iframe>
+    </div>
+
+    <div id="panic-toast">Tap ESC again to Panic!</div>
+
+    <nav class="top-nav">
+        <div class="nav-left"><input type="text" id="search-bar" placeholder="Search games..."></div>
+        <div class="nav-center"><button class="panic-btn" onclick="window.top.location.replace('https://classroom.google.com/h')">Panic!</button></div>
+        <div class="nav-right">
+            <button id="theme-toggle" class="icon-btn">🎨</button>
+        </div>
+    </nav>
+
+    <div class="dropdown-pane" id="theme-pane">
+        <div class="color-dot" style="background: #ff00ff;" onclick="setTheme('#ff00ff')"></div>
+        <div class="color-dot" style="background: #0000ff;" onclick="setTheme('#0000ff')"></div>
+        <div class="color-dot" style="background: #00ff00;" onclick="setTheme('#00ff00')"></div>
+        <div class="color-dot" style="background: #ffff00;" onclick="setTheme('#ffff00')"></div>
+        <div class="color-dot" style="background: #00ffff;" onclick="setTheme('#00ffff')"></div>
+        <div class="color-dot" style="background: #ff0000;" onclick="setTheme('#ff0000')"></div>
+        <div class="color-dot" style="background: #ffaa00;" onclick="setTheme('#ffaa00')"></div>
+        <div class="color-dot" style="background: #ffffff;" onclick="setTheme('#ffffff')"></div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1>Vanillax</h1>
+            <div class="splash">New Hit!</div>
+        </header>
+        <div id="fav-title" class="section-title">Favorites</div>
+        <div class="game-grid" id="favorites-grid"></div>
+        <div id="all-title" class="section-title" style="display: block;">All Games</div>
+        <div class="game-grid" id="main-grid"></div>
+        <footer>&copy; 2026 Vanillax. Created by Ryan (turtle0517)</footer>
+    </div>
+
+    <script>
+        const BASE_URL = "https://a-9-b2-c-4d-6e-7-f8-g1-h3-j5-k7-l9-m0.netlify.app";
+        const gameData = [
+            { name: "Adventure Capitalist", path: "/adcap" },
+            { name: "Bitlife", path: "/bitlife", restricted: true },
+            { name: "Block Blast", path: "/blockblast" },
+            { name: "ChatGPT", customUrl: "https://www.getmerlin.in/chat", external: true },
+            { name: "Clash Royale", path: "/clash" },
+            { name: "Clustertruck", path: "/clustertruck" },
+            { name: "Cookie Clicker", path: "/cookie_clicker" },
+            { name: "Doom", path: "/doom/play/" },
+            { name: "Doodle Baseball", customUrl: "https://www.google.com/logos/2019/july4th19/r6/july4th19.html?hl=en", external: true },
+            { name: "Escape Road", path: "/escape_road", popular: true },
+            { name: "FNAF", path: "/freddy1" },
+            { name: "FNAF 2", path: "/freddy2" },
+            { name: "FNAF 3", path: "/freddy3" },
+            { name: "FNAF 4", path: "/freddy4" },
+            { name: "FreeDraw", path: "/freedraw" },
+            { name: "Friday Night Funkin'", path: "/fnf" },
+            { name: "Geometry Dash", path: "/gd" },
+            { name: "Geometry Dash 3D", path: "/gd3d" },
+            { name: "Granny", path: "/granny", risk: "PLAY AT RISK, CONTAINS VIOLENCE!" },
+            { name: "GTA Driving", path: "/gta_driving" },
+            { name: "House Of Hazzards", path: "/hoh" },
+            { name: "Infinite Craft", path: "/infin_craft" },
+            { name: "Magic Cat Academy", customUrl: "https://www.google.com/logos/2024/halloween24/rc1/halloween24.html", external: true },
+            { name: "Pacman", path: "/pacman" },
+            { name: "Paper.io 2", path: "/paperio2" },
+            { name: "Realistic Car Crash", path: "/real_carcrash" },
+            { name: "Retro Bowl", path: "/retro_bowl" },
+            { name: "Run 3", path: "/run3" },
+            { name: "Slope", path: "/slope" },
+            { name: "Snow Rider 3D", path: "/snow_rider" },
+            { name: "Sonic The Hedgehog", path: "/segason", instruction: "Enter to Start, Z to Jump" },
+            { name: "Stickman Hook", path: "/stickman_hook" },
+            { name: "Subway Surfers", path: "/subway_surf" },
+            { name: "Super Mario Bros.", path: "/supermar", instruction: "Z to Jump" },
+            { name: "Survival Race", path: "/survival_race" },
+            { name: "Tic-Tac-Toe", path: "/ttt" },
+            { name: "Tiny Fishing", path: "/tiny_fishing" },
+            { name: "Wood Stab", path: "/wood_stab" },
+            { name: "Wordle", path: "/wordle" }
+        ];
+
+        let escPresses = 0;
+        let escTimeout;
+        const toast = document.getElementById('panic-toast');
+        const theater = document.getElementById('game-theater');
+        const gFrame = document.getElementById('game-frame');
+
+        if (localStorage.getItem('vanillax_banned') === 'true') { 
+            document.body.classList.add('is-banned'); 
+        }
+        
+        window.addEventListener('keydown', (e) => {
+            // Leave game option: Shift + Escape
+            if (e.shiftKey && e.key === 'Escape') {
+                closeGame();
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                escPresses++;
+                if (escPresses === 1) {
+                    toast.classList.add('active');
+                    clearTimeout(escTimeout);
+                    escTimeout = setTimeout(() => { escPresses = 0; toast.classList.remove('active'); }, 1500);
+                } else if (escPresses === 2) { 
+                    window.top.location.replace('https://classroom.google.com/h'); 
+                }
+            }
+
+            if (e.ctrlKey && e.shiftKey && (e.code === 'Backquote')) { 
+                e.preventDefault(); 
+                localStorage.setItem('vanillax_banned', 'true'); 
+            }
+
+            if (e.key === '|') { 
+                localStorage.setItem('vanillax_banned', 'false'); 
+                document.body.classList.remove('is-banned'); 
+            }
+        });
+
+        function openGame(url, name) {
+            gFrame.src = url;
+            theater.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Cursor lock logic for Doom
+            if (name === "Doom") {
+                gFrame.onload = () => {
+                    gFrame.contentWindow.focus();
+                    gFrame.onclick = () => {
+                        gFrame.requestPointerLock();
+                    };
+                };
+            }
+        }
+
+        function closeGame() {
+            theater.classList.remove('active');
+            gFrame.src = "";
+            document.body.style.overflow = 'auto';
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+        }
+
+        function setTheme(color) { document.documentElement.style.setProperty('--accent-color', color); localStorage.setItem('vanillax_theme', color); }
+        if (localStorage.getItem('vanillax_theme')) setTheme(localStorage.getItem('vanillax_theme'));
+
+        let favorites = JSON.parse(localStorage.getItem('vanilla_favs')) || [];
+        const mainGrid = document.getElementById('main-grid');
+        const favGrid = document.getElementById('favorites-grid');
+        const searchInput = document.getElementById('search-bar');
+
+        function renderGrid() {
+            const query = searchInput.value.toLowerCase();
+            mainGrid.innerHTML = ''; favGrid.innerHTML = '';
+            const favList = gameData.filter(g => favorites.includes(g.name));
+            document.getElementById('fav-title').style.display = favList.length ? 'block' : 'none';
+            favList.forEach(game => createCard(game, true, favGrid));
+            gameData.forEach(game => { if (game.name.toLowerCase().includes(query)) createCard(game, favorites.includes(game.name), mainGrid); });
+        }
+
+        function createCard(game, isFav, grid) {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            const finalUrl = game.customUrl ? game.customUrl : BASE_URL + game.path;
+            
+            card.onclick = (e) => {
+                if(e.target.classList.contains('fav-btn')) return;
+                if(game.external) {
+                    window.open(finalUrl, '_blank');
+                } else {
+                    openGame(finalUrl, game.name);
+                }
+            };
+
+            card.innerHTML = `
+                <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${game.name}')">★</button>
+                <div class="game-title">${game.name}</div>
+                <div class="tag-container">
+                    ${game.popular ? '<span class="popular-tag">#1 Most Popular</span>' : ''}
+                    ${game.restricted ? '<span class="restriction-tag">Age Restricted</span>' : ''}
+                    ${game.instruction ? `<span class="instruction-tag">${game.instruction}</span>` : ''}
+                    ${game.risk ? `<span class="risk-tag">${game.risk}</span>` : ''}
+                </div>`;
+            grid.appendChild(card);
+        }
+
+        window.toggleFav = (event, n) => {
+            event.stopPropagation();
+            const btn = event.target;
+            const card = btn.closest('.game-card');
+            btn.classList.add('star-anim');
+            card.classList.add('animating-card');
+            
+            setTimeout(() => {
+                favorites = favorites.includes(n) ? favorites.filter(f => f !== n) : [...favorites, n];
+                localStorage.setItem('vanilla_favs', JSON.stringify(favorites));
+                renderGrid();
+            }, 200); 
+        };
+
+        searchInput.oninput = renderGrid;
+        document.getElementById('theme-toggle').onclick = (e) => { e.stopPropagation(); document.getElementById('theme-pane').classList.toggle('show'); };
+        window.onclick = () => { document.getElementById('theme-pane').classList.remove('show'); };
+        renderGrid();
+    </script>
+</body>
+</html>
