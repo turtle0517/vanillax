@@ -219,7 +219,7 @@
         <div class="theater-controls">
             <button class="back-arrow-btn" onclick="closeGame()">←</button>
         </div>
-        <iframe id="game-frame" src=""></iframe>
+        <iframe id="game-frame" src="" allow="fullscreen; autoplay; gamepad"></iframe>
     </div>
 
     <nav class="top-nav">
@@ -339,13 +339,11 @@
             theater.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            // Cursor lock logic for Doom
+            // Doom handles its own fullscreen and mouse lock; just give it keyboard focus
+            gFrame.onload = null;
             if (name === "Doom") {
                 gFrame.onload = () => {
-                    gFrame.contentWindow.focus();
-                    gFrame.onclick = () => {
-                        gFrame.requestPointerLock();
-                    };
+                    try { gFrame.contentWindow.focus(); } catch (err) {}
                 };
             }
         }
