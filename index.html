@@ -73,7 +73,7 @@
         }
 
         .nav-left { display: flex; align-items: center; gap: 15px; }
-        .nav-center { display: flex; justify-content: center; }
+        .nav-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .nav-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
 
         .panic-btn {
@@ -92,6 +92,31 @@
         }
         .panic-btn:hover { background: var(--warning-color); color: white; box-shadow: 0 0 15px var(--warning-color); transform: scale(1.02); }
 
+        .panic-btn.has-sub {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .panic-subtext {
+            display: flex;
+            justify-content: center;
+            width: 0;
+            white-space: nowrap;
+            margin-top: 2px;
+            font-size: 0.65rem;
+            font-weight: normal;
+            color: var(--warning-color);
+            text-transform: uppercase;
+            letter-spacing: normal;
+            transition: 0.2s;
+        }
+        .panic-btn:hover .panic-subtext { color: white; }
+
         #search-bar {
             background: rgba(26, 26, 26, 0.8); border: 1px solid #333; color: white;
             padding: 0 15px; border-radius: 20px; outline: none; width: 180px; transition: 0.3s;
@@ -102,25 +127,6 @@
         .icon-btn { background: none; border: none; font-size: 22px; cursor: pointer; opacity: 0.6; transition: 0.2s; }
         .icon-btn:hover { opacity: 1; transform: scale(1.1); }
         
-        #panic-toast {
-            position: fixed;
-            bottom: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff4d4d;
-            color: white;
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            z-index: 100000;
-            pointer-events: none;
-            box-shadow: 0 10px 30px rgba(255, 77, 77, 0.4);
-            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-transform: uppercase;
-        }
-        #panic-toast.active { bottom: 40px; }
-
         /* Game Theater (Iframe) */
         #game-theater {
             display: none;
@@ -163,7 +169,7 @@
         /* Rest of UI */
         .dropdown-pane {
             position: fixed; 
-            top: 55px; right: 20px; background: #1a1a1a;
+            top: 80px; right: 20px; background: #1a1a1a;
             border: 1px solid #333; border-radius: 10px;
             display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             padding: 15px; z-index: 10000;
@@ -188,11 +194,9 @@
         .game-title { color: var(--text-color); font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; padding: 10px; box-sizing: border-box; }
 
         .tag-container { position: absolute; bottom: 8px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-        .popular-tag { color: var(--accent-color); font-size: 0.7rem; text-shadow: 0 0 5px var(--accent-color); text-transform: uppercase; }
         .restriction-tag { color: var(--warning-color); font-size: 0.65rem; text-transform: uppercase; margin-top: 2px; }
         .instruction-tag { color: #00ff00; font-size: 0.6rem; text-transform: uppercase; margin-top: 2px; }
-        .risk-tag { color: #ff0000; font-size: 0.6rem; text-transform: uppercase; margin-top: 2px; font-weight: bold; }
-        
+
         .fav-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #444; font-size: 20px; cursor: pointer; z-index: 10; transition: color 0.2s; }
         .fav-btn.active { color: #ffeb3b; }
 
@@ -218,11 +222,14 @@
         <iframe id="game-frame" src=""></iframe>
     </div>
 
-    <div id="panic-toast">Tap ESC again to Panic!</div>
-
     <nav class="top-nav">
         <div class="nav-left"><input type="text" id="search-bar" placeholder="Search games..."></div>
-        <div class="nav-center"><button class="panic-btn" onclick="window.top.location.replace('https://classroom.google.com/h')">Panic!</button></div>
+        <div class="nav-center">
+            <button class="panic-btn has-sub" onclick="panic()">
+                <span>Panic!</span>
+                <span class="panic-subtext">Alt + Q</span>
+            </button>
+        </div>
         <div class="nav-right">
             <button id="theme-toggle" class="icon-btn">🎨</button>
         </div>
@@ -253,6 +260,7 @@
 
     <script>
         const BASE_URL = "https://a-9-b2-c-4d-6e-7-f8-g1-h3-j5-k7-l9-m0.netlify.app";
+        const PANIC_URL = "https://classroom.google.com/h";
         const gameData = [
             { name: "Adventure Capitalist", path: "/adcap" },
             { name: "Bitlife", path: "/bitlife", restricted: true },
@@ -262,7 +270,7 @@
             { name: "Cookie Clicker", path: "/cookie_clicker" },
             { name: "Doom", path: "/doom/play/" },
             { name: "Doodle Baseball", customUrl: "https://www.google.com/logos/2019/july4th19/r6/july4th19.html?hl=en", external: true },
-            { name: "Escape Road", path: "/escape_road", popular: true },
+            { name: "Escape Road", path: "/escape_road" },
             { name: "FNAF", path: "/freddy1" },
             { name: "FNAF 2", path: "/freddy2" },
             { name: "FNAF 3", path: "/freddy3" },
@@ -271,7 +279,7 @@
             { name: "Friday Night Funkin'", path: "/fnf" },
             { name: "Geometry Dash", path: "/gd" },
             { name: "Geometry Dash 3D", path: "/gd3d" },
-            { name: "Granny", path: "/granny", risk: "PLAY AT RISK, CONTAINS VIOLENCE!" },
+            { name: "Granny", path: "/granny" },
             { name: "GTA Driving", path: "/gta_driving" },
             { name: "House Of Hazzards", path: "/hoh" },
             { name: "Infinite Craft", path: "/infin_craft" },
@@ -294,33 +302,25 @@
             { name: "Wordle", path: "/wordle" }
         ];
 
-        let escPresses = 0;
-        let escTimeout;
-        const toast = document.getElementById('panic-toast');
         const theater = document.getElementById('game-theater');
         const gFrame = document.getElementById('game-frame');
+
+        function panic() {
+            // Blank the game first so nothing keeps playing while the page navigates away
+            try { gFrame.src = "about:blank"; } catch (err) {}
+            window.top.location.replace(PANIC_URL);
+        }
 
         if (localStorage.getItem('vanillax_banned') === 'true') { 
             document.body.classList.add('is-banned'); 
         }
         
         window.addEventListener('keydown', (e) => {
-            // Leave game option: Shift + Escape
-            if (e.shiftKey && e.key === 'Escape') {
-                closeGame();
-                return;
-            }
-
-            if (e.key === 'Escape') {
+            // Panic: Alt + Q
+            if (e.altKey && e.code === 'KeyQ') {
                 e.preventDefault();
-                escPresses++;
-                if (escPresses === 1) {
-                    toast.classList.add('active');
-                    clearTimeout(escTimeout);
-                    escTimeout = setTimeout(() => { escPresses = 0; toast.classList.remove('active'); }, 1500);
-                } else if (escPresses === 2) { 
-                    window.top.location.replace('https://classroom.google.com/h'); 
-                }
+                panic();
+                return;
             }
 
             if (e.ctrlKey && e.shiftKey && (e.code === 'Backquote')) { 
@@ -391,14 +391,13 @@
             };
 
             card.innerHTML = `
-                <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${game.name}')">★</button>
+                <button class="fav-btn ${isFav ? 'active' : ''}">★</button>
                 <div class="game-title">${game.name}</div>
                 <div class="tag-container">
-                    ${game.popular ? '<span class="popular-tag">#1 Most Popular</span>' : ''}
                     ${game.restricted ? '<span class="restriction-tag">Age Restricted</span>' : ''}
                     ${game.instruction ? `<span class="instruction-tag">${game.instruction}</span>` : ''}
-                    ${game.risk ? `<span class="risk-tag">${game.risk}</span>` : ''}
                 </div>`;
+            card.querySelector('.fav-btn').addEventListener('click', (e) => toggleFav(e, game.name));
             grid.appendChild(card);
         }
 
